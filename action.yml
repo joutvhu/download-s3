@@ -1,0 +1,34 @@
+name: Download AWS S3
+description: GitHub action to download files from Amazon S3
+author: Giao Ho
+inputs:
+  aws_access_key_id:
+    description: AWS access key ID.
+    required: true
+  aws_secret_access_key:
+    description: AWS secret access key.
+    required: true
+  aws_region:
+    description: The region to send service requests to.
+    required: true
+  aws_bucket:
+    description: The bucket name to which the PUT action was initiated.
+    required: true
+  source:
+    description: The local directory (or file) you wish to upload to S3.
+    required: true
+    default: ''
+  target:
+    description: The directory (or file path) on the bucket to upload files.
+    required: true
+outputs:
+  succeeded:
+    description: Number of successful files
+  failed:
+    description: Number of failed files
+runs:
+  using: node20
+  main: action/index.js
+branding:
+  icon: upload-cloud
+  color: red
