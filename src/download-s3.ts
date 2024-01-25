@@ -1,7 +1,9 @@
 import * as aws from 'aws-sdk';
 import * as core from '@actions/core';
 import {getInputs, S3Inputs} from './io-helper';
-import {ListObjectsV2Output, StartAfter} from 'aws-sdk/clients/s3';
+import {ListObjectsV2Output, ObjectList, StartAfter} from 'aws-sdk/clients/s3';
+import * as fs from 'fs';
+import {Readable} from 'stream';
 
 (async function run() {
   try {
@@ -24,15 +26,32 @@ import {ListObjectsV2Output, StartAfter} from 'aws-sdk/clients/s3';
         Prefix: inputs.source,
         StartAfter: startAfter
       }).promise();
+      const contents: ObjectList = objects.Contents ?? [];
 
-      for (const content of objects.Contents ?? []) {
+      for (const content of contents) {
         if (content?.Key != null) {
-          startAfter = content.Key;
+          const object = await s3.getObject({
+            Bucket: inputs.awsBucket,
+            Key: content.Key
+          }).promise();
 
-
+          if (typeof object.Body === 'string' || object.Body instanceof Uint8Array || object.Body instanceof Buffer) {
+            fs.writeFileSync('downloadedFile.txt', object.Body);
+          } else if (object.Body instanceof Blob) {
+            fs.createWriteStream('downloadedFile.txt').write(object.Body);
+          } else if (object.Body instanceof Readable) {
+            fs.createWriteStream('downloadedFile.txt').write(object.Body);
+          }
         }
       }
-    } while (startAfter != null && objects?.MaxKeys != null && objects?.KeyCount === objects?.MaxKeys);
+
+      if (objects.MaxKeys != null &&
+        objects.MaxKeys === objects.KeyCount &&
+        objects.KeyCount === contents.length &&
+        contents.length > 0) {
+        startAfter = contents[contents.length - 1].Key;
+      }
+    } while (startAfter != null);
   } catch (err: any) {
     core.debug(`Error status: ${err.status}`);
     core.setFailed(err.message);
