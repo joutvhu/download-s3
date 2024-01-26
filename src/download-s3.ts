@@ -27,14 +27,14 @@ function createFolder(file: string) {
     p.push(paths[i]);
     const v = p.join('/');
     if (v.length > 0 && !fs.existsSync(v)) {
-      core.info(`Creating directory ${v}`);
+      core.debug(`Creating directory ${v}`);
       fs.mkdirSync(v);
     }
   }
 }
 
 function saveFile(file: string, body?: Body) {
-  core.info(`Downloading file ${file}`);
+  core.debug(`Downloading file ${file}`);
   createFolder(file);
   if (typeof body === 'string' || body instanceof Uint8Array || body instanceof Buffer) {
     fs.writeFileSync(file, body);
