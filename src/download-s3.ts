@@ -4,6 +4,7 @@ import {getInputs, S3Inputs} from './io-helper';
 import {Body, ListObjectsV2Output, ObjectList, StartAfter} from 'aws-sdk/clients/s3';
 import * as fs from 'fs';
 import {Readable} from 'stream';
+import path from 'path';
 
 function checkKey(key?: string, prefix?: string): boolean {
   if (key != null) {
@@ -19,13 +20,16 @@ function checkKey(key?: string, prefix?: string): boolean {
   return false;
 }
 
-function saveFile(path: string, body?: Body) {
+function saveFile(file: string, body?: Body) {
   if (typeof body === 'string' || body instanceof Uint8Array || body instanceof Buffer) {
-    fs.writeFileSync(path, body);
+    fs.writeFileSync(file, body);
+    core.info(`Downloaded file ${file}`);
   } else if (body instanceof Blob) {
-    fs.createWriteStream(path).write(body);
+    fs.createWriteStream(file).write(body);
+    core.info(`Downloaded file ${file}`);
   } else if (body instanceof Readable) {
-    fs.createWriteStream(path).write(body);
+    fs.createWriteStream(file).write(body);
+    core.info(`Downloaded file ${file}`);
   }
 }
 
@@ -59,8 +63,11 @@ function saveFile(path: string, body?: Body) {
             Key: content.Key!
           }).promise();
 
+          const file = path.join(
+            inputs.target.endsWith('/') ? inputs.target : inputs.target + '/',
+            content.Key!.substring(inputs.source.length));
 
-          saveFile('', object.Body);
+          saveFile(file, object.Body);
         }
       }
 

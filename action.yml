@@ -21,6 +21,7 @@ inputs:
   target:
     description: The directory (or file path) on the bucket to upload files.
     required: true
+    default: '.'
 outputs:
   succeeded:
     description: Number of successful files
