@@ -20,7 +20,22 @@ function checkKey(key?: string, prefix?: string): boolean {
   return false;
 }
 
+function createFolder(file: string) {
+  const paths = file.split('/');
+  const p: string[] = [];
+  for (let i = 0, len = paths.length - 1; i < len; i++) {
+    p.push(paths[i]);
+    const v = p.join('/');
+    if (v.length > 0 && !fs.existsSync(v)) {
+      core.info(`Creating directory ${v}`);
+      fs.mkdirSync(v);
+    }
+  }
+}
+
 function saveFile(file: string, body?: Body) {
+  core.info(`Downloading file ${file}`);
+  createFolder(file);
   if (typeof body === 'string' || body instanceof Uint8Array || body instanceof Buffer) {
     fs.writeFileSync(file, body);
     core.info(`Downloaded file ${file}`);
@@ -58,16 +73,20 @@ function saveFile(file: string, body?: Body) {
 
       for (const content of contents) {
         if (checkKey(content?.Key, inputs.source)) {
-          const object = await s3.getObject({
-            Bucket: inputs.awsBucket,
-            Key: content.Key!
-          }).promise();
+          if (content.Key!.endsWith('/')) {
+            core.warning(`Can't download file "${content.Key}"`);
+          } else {
+            const object = await s3.getObject({
+              Bucket: inputs.awsBucket,
+              Key: content.Key!
+            }).promise();
 
-          const file = path.join(
-            inputs.target.endsWith('/') ? inputs.target : inputs.target + '/',
-            content.Key!.substring(inputs.source.length));
+            const file = path.join(
+              inputs.target.endsWith('/') ? inputs.target : inputs.target + '/',
+              content.Key!.substring(inputs.source.length));
 
-          saveFile(file, object.Body);
+            saveFile(file, object.Body);
+          }
         }
       }
 
@@ -78,6 +97,8 @@ function saveFile(file: string, body?: Body) {
         startAfter = objects.Contents?.at(-1)?.Key;
       }
     } while (startAfter != null);
+
+    core.info(`Downloaded files from ${inputs.source} to ${inputs.target}.`);
   } catch (err: any) {
     core.debug(`Error status: ${err.status}`);
     core.setFailed(err.message);

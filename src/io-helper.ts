@@ -9,7 +9,6 @@ export interface S3Inputs {
   awsBucket: string;
   source: string;
   target: string;
-  ignoreError?: boolean;
 }
 
 export function isBlank(value: any): boolean {
@@ -38,10 +37,8 @@ export function getInputs(): S3Inputs {
   result.awsRegion = core.getInput(Inputs.AwsRegion, {required: true});
   result.awsBucket = core.getInput(Inputs.AwsBucket, {required: true});
 
-  result.source = core.getInput(Inputs.Source, {required: true});
-  result.target = core.getInput(Inputs.Target, {required: true});
-
-  result.ignoreError = getBooleanInput(Inputs.IgnoreError, {required: false});
+  result.source = core.getInput(Inputs.Source, {required: false}) ?? '';
+  result.target = core.getInput(Inputs.Target, {required: false}) ?? '.';
 
   return result;
 }

@@ -16,11 +16,9 @@ inputs:
     required: true
   source:
     description: The local directory (or file) you wish to upload to S3.
-    required: true
     default: ''
   target:
     description: The directory (or file path) on the bucket to upload files.
-    required: true
     default: '.'
 outputs:
   succeeded:
