@@ -30,5 +30,5 @@ runs:
   using: node20
   main: action/index.js
 branding:
-  icon: upload-cloud
+  icon: download-cloud
   color: red
