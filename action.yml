@@ -1,4 +1,4 @@
-name: Download AWS S3
+name: Download S3
 description: GitHub action to download files from Amazon S3
 author: Giao Ho
 inputs:
@@ -12,14 +12,14 @@ inputs:
     description: The region to send service requests to.
     required: true
   aws_bucket:
-    description: The bucket name to which the PUT action was initiated.
+    description: The bucket name containing the files to download.
     required: true
   source:
-    description: The local directory (or file) you wish to upload to S3.
+    description: The directory (or file path) on the bucket to which you want to download.
     required: false
     default: ''
   target:
-    description: The directory (or file path) on the bucket to upload files.
+    description: The local directory (or file path) where files are saved.
     required: false
     default: '.'
 outputs:

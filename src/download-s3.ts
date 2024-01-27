@@ -1,6 +1,6 @@
 import * as aws from 'aws-sdk';
 import * as core from '@actions/core';
-import {getInputs, S3Inputs} from './io-helper';
+import {getInputs, S3Inputs, setOutputs} from './io-helper';
 import {Body, ListObjectsV2Output, ObjectList, StartAfter} from 'aws-sdk/clients/s3';
 import * as fs from 'fs';
 import {Readable} from 'stream';
@@ -33,18 +33,23 @@ function createFolder(file: string) {
   }
 }
 
-function saveFile(file: string, body?: Body) {
+function saveFile(file: string, body?: Body): boolean {
   core.debug(`Downloading file ${file}`);
   createFolder(file);
   if (typeof body === 'string' || body instanceof Uint8Array || body instanceof Buffer) {
     fs.writeFileSync(file, body);
     core.info(`Downloaded file ${file}`);
+    return true;
   } else if (body instanceof Blob) {
     fs.createWriteStream(file).write(body);
     core.info(`Downloaded file ${file}`);
+    return true;
   } else if (body instanceof Readable) {
     fs.createWriteStream(file).write(body);
     core.info(`Downloaded file ${file}`);
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -61,6 +66,10 @@ function saveFile(file: string, body?: Body) {
     });
     const s3 = new aws.S3({signatureVersion: 'v4'});
 
+    const outputs: any = {
+      succeeded: 0,
+      failed: 0
+    };
     let startAfter: StartAfter | undefined = undefined;
     let objects: ListObjectsV2Output | undefined;
     do {
@@ -75,6 +84,7 @@ function saveFile(file: string, body?: Body) {
         if (checkKey(content?.Key, inputs.source)) {
           if (content.Key!.endsWith('/')) {
             core.warning(`Can't download file "${content.Key}"`);
+            outputs.failed++;
           } else {
             const object = await s3.getObject({
               Bucket: inputs.awsBucket,
@@ -85,7 +95,12 @@ function saveFile(file: string, body?: Body) {
               inputs.target.endsWith('/') ? inputs.target : inputs.target + '/',
               content.Key!.substring(inputs.source.length));
 
-            saveFile(file, object.Body);
+            const saved = saveFile(file, object.Body);
+            if (saved) {
+              outputs.succeeded++;
+            } else {
+              outputs.failed++;
+            }
           }
         }
       }
@@ -99,8 +114,8 @@ function saveFile(file: string, body?: Body) {
     } while (startAfter != null);
 
     core.info(`Downloaded files from ${inputs.source} to ${inputs.target}.`);
+    setOutputs(outputs);
   } catch (err: any) {
-    core.debug(`Error status: ${err.status}`);
     core.setFailed(err.message);
   }
 })();
